@@ -2,15 +2,17 @@ package config
 
 import (
 	"sync"
+	"time"
 )
 
 var (
-	// DefaultMaxConcurrent is how many commands of the same type can run at the same time in a executor pool
+	// DefaultMaxConcurrent is how many commands of the same type can run at the same time in an executor pool
 	DefaultMaxConcurrent = 10
 )
 
 type Config struct {
 	MaxConcurrentRequests int
+	SleepWindow           time.Duration
 }
 
 var circuitConfig map[string]*Config
