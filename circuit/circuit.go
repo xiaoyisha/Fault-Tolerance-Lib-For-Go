@@ -2,6 +2,7 @@ package circuit
 
 import (
 	"Fault-Tolerance-Lib-For-Go/config"
+	"Fault-Tolerance-Lib-For-Go/metrics"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -16,6 +17,8 @@ type CircuitBreaker struct {
 	forceOpen              bool
 	mutex                  *sync.RWMutex
 	openedOrLastTestedTime int64
+	ExecutorPool           *ExecutorPool
+	Metrics                *metrics.MetricExchange
 }
 
 var (
@@ -28,9 +31,37 @@ func init() {
 	circuitBreakers = make(map[string]*CircuitBreaker)
 }
 
+// NewCircuitBreaker creates a CircuitBreaker with associated Health
+func NewCircuitBreaker(name string) *CircuitBreaker {
+	c := &CircuitBreaker{}
+	c.Name = name
+	c.Metrics = metrics.NewMetricExchange(name)
+	c.ExecutorPool = NewExecutorPool(name)
+	c.mutex = &sync.RWMutex{}
+
+	return c
+}
+
 // TODO
 func GetCircuitBreaker(name string) (*CircuitBreaker, bool, error) {
-	return circuitBreakers[name], false, nil
+	circuitBreakersMutex.RLock()
+	_, ok := circuitBreakers[name]
+	if !ok {
+		circuitBreakersMutex.RUnlock()
+		circuitBreakersMutex.Lock()
+		defer circuitBreakersMutex.Unlock()
+		// because we released the rlock before we obtained the exclusive lock,
+		// we need to double check that some other thread didn't beat us to
+		// creation.
+		if cb, ok := circuitBreakers[name]; ok {
+			return cb, false, nil
+		}
+		circuitBreakers[name] = NewCircuitBreaker(name)
+	} else {
+		defer circuitBreakersMutex.RUnlock()
+	}
+
+	return circuitBreakers[name], !ok, nil
 }
 
 func (circuitBreaker *CircuitBreaker) switchForceOpen(forceOpen bool) error {
@@ -40,6 +71,18 @@ func (circuitBreaker *CircuitBreaker) switchForceOpen(forceOpen bool) error {
 	}
 	circuitBreaker.forceOpen = forceOpen
 	return nil
+}
+
+// Flush purges all circuit and metric information from memory.
+func Flush() {
+	circuitBreakersMutex.Lock()
+	defer circuitBreakersMutex.Unlock()
+
+	for name, cb := range circuitBreakers {
+		cb.Metrics.Reset()
+		cb.ExecutorPool.Metrics.Reset()
+		delete(circuitBreakers, name)
+	}
 }
 
 // IsOpen is called before any Command execution. An "open" circuit
