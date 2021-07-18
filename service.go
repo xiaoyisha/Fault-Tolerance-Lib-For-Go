@@ -5,6 +5,7 @@ import (
 	"Fault-Tolerance-Lib-For-Go/config"
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -40,6 +41,8 @@ type Command struct {
 	start          time.Time
 	errChan        chan error
 	finished       chan bool
+	runDuration    time.Duration
+	events         []string
 }
 
 var (
@@ -103,6 +106,20 @@ func (c *Command) returnTicket() {
 	c.Unlock()
 }
 
+func (c *Command) reportEvent(eventType string) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.events = append(c.events, eventType)
+}
+
+func (c *Command) reportAllEvents() {
+	err := c.circuitBreaker.ReportEvent(c.events, c.start, c.runDuration)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+}
+
 func (c *Command) firstGoroutine(ctx context.Context) {
 	defer func() { c.finished <- true }()
 	if !c.circuitBreaker.AllowRequest() {
@@ -128,7 +145,9 @@ func (c *Command) firstGoroutine(ctx context.Context) {
 		c.ticketGot = true
 		c.ticketCond.Signal()
 		c.Unlock()
+		log.Printf("in r1 case1")
 	default:
+		log.Printf("in r1 default case")
 		c.ticketGot = true
 		c.ticketCond.Signal()
 		c.Unlock()
@@ -138,16 +157,23 @@ func (c *Command) firstGoroutine(ctx context.Context) {
 		})
 		return
 	}
-	//runStart := time.Now()
+	log.Printf("here.......")
+
+	runStart := time.Now()
 	runErr := c.run(ctx)
+	log.Printf("runErr: %v", runErr)
+
 	c.returnOnce.Do(func() {
-		//c.runDuration = time.Since(runStart)
+		c.runDuration = time.Since(runStart)
 		c.returnTicket()
+		log.Printf("runErr: %v", runErr)
 		if runErr != nil {
 			c.errorWithFallback(ctx, runErr)
+			log.Printf("here")
 			return
 		}
-		//cmd.reportEvent("success")
+		c.reportEvent("success")
+		c.reportAllEvents()
 	})
 }
 
@@ -162,24 +188,37 @@ func (c *Command) secondGoroutine(ctx context.Context) {
 		c.returnOnce.Do(func() {
 			c.returnTicket()
 			c.errorWithFallback(ctx, ctx.Err())
-			//reportAllEvent()
 		})
 		return
 	case <-timer.C:
 		c.returnOnce.Do(func() {
 			c.returnTicket()
 			c.errorWithFallback(ctx, ErrTimeout)
-			//reportAllEvent()
 		})
 		return
 	}
 }
 
 func (c *Command) errorWithFallback(ctx context.Context, err error) {
+	eventType := "failure"
+	if err == ErrCircuitOpen {
+		eventType = "short-circuit"
+	} else if err == ErrMaxConcurrency {
+		eventType = "rejected"
+	} else if err == ErrTimeout {
+		eventType = "timeout"
+	} else if err == context.Canceled {
+		eventType = "context_canceled"
+	} else if err == context.DeadlineExceeded {
+		eventType = "context_deadline_exceeded"
+	}
+
+	c.reportEvent(eventType)
 	fallbackErr := c.tryFallback(ctx, err)
 	if fallbackErr != nil {
 		c.errChan <- fallbackErr
 	}
+	c.reportAllEvents()
 }
 
 func (c *Command) tryFallback(ctx context.Context, err error) error {
@@ -189,8 +228,65 @@ func (c *Command) tryFallback(ctx context.Context, err error) error {
 
 	fallbackErr := c.fallback(ctx, err)
 	if fallbackErr != nil {
+		c.reportEvent("fallback-failure")
 		return fmt.Errorf("fallback err: %v, run err: %v", fallbackErr, err)
 	}
+	c.reportEvent("fallback-success")
 
 	return nil
+}
+
+// Do runs your function in a synchronous manner, blocking until either your function succeeds
+// or an error is returned, including hystrix circuit errors
+func Do(name string, run RunFunc, fallback FallbackFunc) error {
+	runC := func(ctx context.Context) error {
+		return run()
+	}
+	var fallbackC FallbackFuncC
+	if fallback != nil {
+		fallbackC = func(ctx context.Context, err error) error {
+			return fallback(err)
+		}
+	}
+	return DoC(context.Background(), name, runC, fallbackC)
+}
+
+// DoC runs your function in a synchronous manner, blocking until either your function succeeds
+// or an error is returned, including hystrix circuit errors
+func DoC(ctx context.Context, name string, run RunFuncC, fallback FallbackFuncC) error {
+	done := make(chan struct{}, 1)
+
+	r := func(ctx context.Context) error {
+		err := run(ctx)
+		if err != nil {
+			return err
+		}
+
+		done <- struct{}{}
+		return nil
+	}
+
+	f := func(ctx context.Context, e error) error {
+		err := fallback(ctx, e)
+		if err != nil {
+			return err
+		}
+
+		done <- struct{}{}
+		return nil
+	}
+
+	var errChan chan error
+	if fallback == nil {
+		errChan = GoC(ctx, name, r, nil)
+	} else {
+		errChan = GoC(ctx, name, r, f)
+	}
+
+	select {
+	case <-done:
+		return nil
+	case err := <-errChan:
+		return err
+	}
 }

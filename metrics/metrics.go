@@ -57,7 +57,7 @@ func (m *MetricExchange) Monitor() {
 		wg := &sync.WaitGroup{}
 		for _, collector := range m.metricCollectors {
 			wg.Add(1)
-			go m.IncrementMetrics(wg, collector, update, totalDuration)
+			go m.IncrementMetrics(wg, &collector, update, totalDuration)
 		}
 		wg.Wait()
 
@@ -65,7 +65,7 @@ func (m *MetricExchange) Monitor() {
 	}
 }
 
-func (m *MetricExchange) IncrementMetrics(wg *sync.WaitGroup, collector MetricCollector, update *CommandExecution, totalDuration time.Duration) {
+func (m *MetricExchange) IncrementMetrics(wg *sync.WaitGroup, collector *MetricCollector, update *CommandExecution, totalDuration time.Duration) {
 	// granular metrics
 	r := MetricResult{
 		Attempts:         1,
@@ -105,7 +105,7 @@ func (m *MetricExchange) IncrementMetrics(wg *sync.WaitGroup, collector MetricCo
 		}
 	}
 
-	collector.Update(r)
+	(*collector).Update(r)
 
 	wg.Done()
 }

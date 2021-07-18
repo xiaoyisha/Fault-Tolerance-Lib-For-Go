@@ -53,7 +53,6 @@ func NewCircuitBreaker(name string) *CircuitBreaker {
 	return c
 }
 
-// TODO
 func GetCircuitBreaker(name string) (*CircuitBreaker, bool, error) {
 	circuitBreakersMutex.RLock()
 	_, ok := circuitBreakers[name]
@@ -75,7 +74,7 @@ func GetCircuitBreaker(name string) (*CircuitBreaker, bool, error) {
 	return circuitBreakers[name], !ok, nil
 }
 
-func (circuitBreaker *CircuitBreaker) switchForceOpen(forceOpen bool) error {
+func (circuitBreaker *CircuitBreaker) SwitchForceOpen(forceOpen bool) error {
 	circuitBreaker, _, err := GetCircuitBreaker(circuitBreaker.Name)
 	if err != nil {
 		return err
@@ -112,7 +111,7 @@ func (circuitBreaker *CircuitBreaker) IsOpen() bool {
 
 	if !circuitBreaker.Metrics.IsHealthy(time.Now()) {
 		// too many failures, open the circuit
-		circuitBreaker.setOpen()
+		circuitBreaker.SetOpen()
 		return true
 	}
 
@@ -144,7 +143,7 @@ func (circuitBreaker *CircuitBreaker) allowSingleTest() bool {
 	return false
 }
 
-func (circuitBreaker *CircuitBreaker) setOpen() {
+func (circuitBreaker *CircuitBreaker) SetOpen() {
 	circuitBreaker.mutex.Lock()
 	defer circuitBreaker.mutex.Unlock()
 
