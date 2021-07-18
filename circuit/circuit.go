@@ -3,6 +3,7 @@ package circuit
 import (
 	"Fault-Tolerance-Lib-For-Go/config"
 	"Fault-Tolerance-Lib-For-Go/metrics"
+	"fmt"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -19,6 +20,16 @@ type CircuitBreaker struct {
 	openedOrLastTestedTime int64
 	ExecutorPool           *ExecutorPool
 	Metrics                *metrics.MetricExchange
+}
+
+// A CircuitError is an error which models various failure states of execution,
+// such as the circuit being open or a timeout.
+type CircuitError struct {
+	Message string
+}
+
+func (e CircuitError) Error() string {
+	return e.Message
 }
 
 var (
@@ -95,7 +106,15 @@ func (circuitBreaker *CircuitBreaker) IsOpen() bool {
 		return true
 	}
 
-	// TODO Metrics
+	if uint64(circuitBreaker.Metrics.Requests().Sum(time.Now())) < config.GetCircuitConfig(circuitBreaker.Name).RequestVolumeThreshold {
+		return false
+	}
+
+	if !circuitBreaker.Metrics.IsHealthy(time.Now()) {
+		// too many failures, open the circuit
+		circuitBreaker.setOpen()
+		return true
+	}
 
 	return false
 }
@@ -117,10 +136,70 @@ func (circuitBreaker *CircuitBreaker) allowSingleTest() bool {
 	if circuitBreaker.open && now > openedOrLastTestedTime+config.GetCircuitConfig(circuitBreaker.Name).SleepWindow.Nanoseconds() {
 		swapped := atomic.CompareAndSwapInt64(&circuitBreaker.openedOrLastTestedTime, openedOrLastTestedTime, now)
 		if swapped {
-			log.Printf("hystrix-go: allowing single test to possibly close circuit %v", circuitBreaker.Name)
+			log.Printf("allowing single test to possibly close circuit %v", circuitBreaker.Name)
 		}
 		return swapped
 	}
 
 	return false
+}
+
+func (circuitBreaker *CircuitBreaker) setOpen() {
+	circuitBreaker.mutex.Lock()
+	defer circuitBreaker.mutex.Unlock()
+
+	if circuitBreaker.open {
+		return
+	}
+
+	log.Printf("opening circuit %v", circuitBreaker.Name)
+
+	circuitBreaker.openedOrLastTestedTime = time.Now().UnixNano()
+	circuitBreaker.open = true
+}
+
+func (circuitBreaker *CircuitBreaker) setClose() {
+	circuitBreaker.mutex.Lock()
+	defer circuitBreaker.mutex.Unlock()
+
+	if !circuitBreaker.open {
+		return
+	}
+
+	log.Printf("closing circuit %v", circuitBreaker.Name)
+
+	circuitBreaker.open = false
+	circuitBreaker.Metrics.Reset()
+}
+
+// ReportEvent records command metrics for tracking recent error rates
+func (circuitBreaker *CircuitBreaker) ReportEvent(eventTypes []string, start time.Time, runDuration time.Duration) error {
+	if len(eventTypes) == 0 {
+		return fmt.Errorf("no event types sent for metrics")
+	}
+
+	circuitBreaker.mutex.RLock()
+	o := circuitBreaker.open
+	circuitBreaker.mutex.RUnlock()
+	if eventTypes[0] == "success" && o {
+		circuitBreaker.setClose()
+	}
+
+	var concurrencyInUse float64
+	if circuitBreaker.ExecutorPool.MaxReq > 0 {
+		concurrencyInUse = float64(circuitBreaker.ExecutorPool.ActiveCount()) / float64(circuitBreaker.ExecutorPool.MaxReq)
+	}
+
+	select {
+	case circuitBreaker.Metrics.Updates <- &metrics.CommandExecution{
+		Types:            eventTypes,
+		Start:            start,
+		RunDuration:      runDuration,
+		ConcurrencyInUse: concurrencyInUse,
+	}:
+	default:
+		return CircuitError{Message: fmt.Sprintf("metrics channel (%v) is at capacity", circuitBreaker.Name)}
+	}
+
+	return nil
 }

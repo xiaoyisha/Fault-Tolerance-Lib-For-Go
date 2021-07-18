@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type commandExecution struct {
+type CommandExecution struct {
 	Types            []string      `json:"types"`
 	Start            time.Time     `json:"start_time"`
 	RunDuration      time.Duration `json:"run_duration"`
@@ -16,7 +16,7 @@ type commandExecution struct {
 
 type MetricExchange struct {
 	Name    string
-	Updates chan *commandExecution
+	Updates chan *CommandExecution
 	Mutex   *sync.RWMutex
 
 	metricCollectors []MetricCollector
@@ -26,7 +26,7 @@ func NewMetricExchange(name string) *MetricExchange {
 	m := &MetricExchange{}
 	m.Name = name
 
-	m.Updates = make(chan *commandExecution, 2000)
+	m.Updates = make(chan *CommandExecution, 2000)
 	m.Mutex = &sync.RWMutex{}
 	m.metricCollectors = Registry.InitializeMetricCollectors(name)
 	m.Reset()
@@ -65,7 +65,7 @@ func (m *MetricExchange) Monitor() {
 	}
 }
 
-func (m *MetricExchange) IncrementMetrics(wg *sync.WaitGroup, collector MetricCollector, update *commandExecution, totalDuration time.Duration) {
+func (m *MetricExchange) IncrementMetrics(wg *sync.WaitGroup, collector MetricCollector, update *CommandExecution, totalDuration time.Duration) {
 	// granular metrics
 	r := MetricResult{
 		Attempts:         1,
@@ -146,4 +146,20 @@ func (m *MetricExchange) ErrorPercent(now time.Time) int {
 
 func (m *MetricExchange) IsHealthy(now time.Time) bool {
 	return m.ErrorPercent(now) < config.GetCircuitConfig(m.Name).ErrorPercentThreshold
+}
+
+func MetricFailingPercent(p int) *MetricExchange {
+	m := NewMetricExchange("")
+	for i := 0; i < 100; i++ {
+		t := "success"
+		if i < p {
+			t = "failure"
+		}
+		m.Updates <- &CommandExecution{Types: []string{t}}
+	}
+
+	// Updates needs to be flushed
+	time.Sleep(100 * time.Millisecond)
+
+	return m
 }
