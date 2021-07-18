@@ -102,3 +102,15 @@ func GetCircuitConfig(name string) *Config {
 
 	return s
 }
+
+func GetCircuitConfigMap() map[string]*Config {
+	copy := make(map[string]*Config)
+
+	configMutex.RLock()
+	for key, val := range circuitConfig {
+		copy[key] = val
+	}
+	configMutex.RUnlock()
+
+	return copy
+}
