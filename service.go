@@ -145,7 +145,6 @@ func (c *Command) firstGoroutine(ctx context.Context) {
 		c.ticketGot = true
 		c.ticketCond.Signal()
 		c.Unlock()
-		log.Printf("in r1 case1")
 	default:
 		log.Printf("in r1 default case")
 		c.ticketGot = true
@@ -157,8 +156,6 @@ func (c *Command) firstGoroutine(ctx context.Context) {
 		})
 		return
 	}
-	log.Printf("here.......")
-
 	runStart := time.Now()
 	runErr := c.run(ctx)
 	log.Printf("runErr: %v", runErr)
