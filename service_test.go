@@ -1,8 +1,8 @@
 package Fault_Tolerance_Lib_For_Go
 
 import (
-	"Fault-Tolerance-Lib-For-Go/circuit"
-	"Fault-Tolerance-Lib-For-Go/config"
+	"Perseus/circuit"
+	"Perseus/config"
 	"context"
 	"fmt"
 	"testing"
@@ -308,6 +308,7 @@ func TestSlowFallbackOpenCircuit(t *testing.T) {
 				Convey("and a timeout event is not recorded", func() {
 					So(cb.Metrics.DefaultCollector().ShortCircuits().Sum(time.Now()), ShouldEqual, 1)
 					So(cb.Metrics.DefaultCollector().Timeouts().Sum(time.Now()), ShouldEqual, 0)
+					So(cb.Metrics.DefaultCollector().FallbackSuccesses().Sum(time.Now()), ShouldEqual, 1)
 				})
 			})
 		})
@@ -337,7 +338,6 @@ func TestFallbackAfterRejected(t *testing.T) {
 				close(runChan)
 				return nil
 			})
-
 			Convey("should not execute the run function", func() {
 				So(<-fallbackChan, ShouldBeTrue)
 				So(<-runChan, ShouldBeFalse)
@@ -566,7 +566,7 @@ func TestDoC(t *testing.T) {
 		}, nil)
 
 		Convey("the timeout error is returned", func() {
-			So(err.Error(), ShouldEqual, "fault-tolerance-lib: timeout")
+			So(err.Error(), ShouldEqual, "Perseus: timeout")
 		})
 	})
 }

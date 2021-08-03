@@ -1,3 +1,3 @@
-# Fault-Tolerance-Lib-For-Go
+# Perseus
 
-This is a latency and fault tolerance library designed for Golang.
+Perseus is a latency and fault tolerance library designed for Golang.

@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"Fault-Tolerance-Lib-For-Go/rolling"
+	"Perseus/rolling"
 	"sync"
 )
 

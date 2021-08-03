@@ -1,8 +1,8 @@
 package circuit
 
 import (
-	"Fault-Tolerance-Lib-For-Go/config"
-	"Fault-Tolerance-Lib-For-Go/metrics"
+	"Perseus/config"
+	"Perseus/metrics"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"sync"

@@ -6,29 +6,28 @@ import (
 	"net"
 )
 
-// startServer starts the server
-func startServer() {
+// startServer2 starts the server2
+func startServer2() {
 	var i = 0
-	listener, err := net.Listen("tcp", "localhost:8888")
+	listener, err := net.Listen("tcp", "localhost:8889")
 	if err != nil {
 		log.Fatal("an error!", err.Error())
 	}
 	defer listener.Close()
 
-	fmt.Println("the server is listening")
+	fmt.Println("server2 is listening......")
 	for {
 		i++
-		fmt.Println("before accept")
 		conn, err := listener.Accept()
 		if err != nil {
 			continue
 		}
-		go handleRequest(conn, i)
+		go handleRequest2(conn, i)
 	}
 }
 
-// handleRequest the server handles a request from clients
-func handleRequest(conn net.Conn, num int) {
+// handleRequest2 the server2 handles a request from clients
+func handleRequest2(conn net.Conn, num int) {
 	fmt.Println("accept num:", num)
 	clientInfo := make([]byte, 2048)
 	// read the information from the client
@@ -39,7 +38,7 @@ func handleRequest(conn net.Conn, num int) {
 	}
 
 	fmt.Println(string(clientInfo))
-	sInfo := "hello, I am server"
+	sInfo := "Hello, I am server2."
 	clientInfo = []byte(sInfo)
 	// send the information to the client
 	_, err = conn.Write(clientInfo)
@@ -50,5 +49,5 @@ func handleRequest(conn net.Conn, num int) {
 }
 
 func main() {
-	startServer()
+	startServer2()
 }

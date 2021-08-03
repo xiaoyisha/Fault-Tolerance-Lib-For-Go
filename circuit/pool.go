@@ -1,8 +1,8 @@
 package circuit
 
 import (
-	"Fault-Tolerance-Lib-For-Go/config"
-	"Fault-Tolerance-Lib-For-Go/rolling"
+	"Perseus/config"
+	"Perseus/rolling"
 	"sync"
 )
 

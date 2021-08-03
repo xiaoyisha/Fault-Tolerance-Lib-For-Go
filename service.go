@@ -1,8 +1,8 @@
 package Fault_Tolerance_Lib_For_Go
 
 import (
-	"Fault-Tolerance-Lib-For-Go/circuit"
-	"Fault-Tolerance-Lib-For-Go/config"
+	"Perseus/circuit"
+	"Perseus/config"
 	"context"
 	"fmt"
 	"log"
@@ -22,7 +22,7 @@ type CircuitError struct {
 }
 
 func (e CircuitError) Error() string {
-	return "fault-tolerance-lib: " + e.Message
+	return "Perseus: " + e.Message
 }
 
 // Command models the state used for a single execution on a circuit. "hystrix command" is commonly

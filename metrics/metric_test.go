@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"Fault-Tolerance-Lib-For-Go/config"
+	"Perseus/config"
 	"testing"
 	"time"
 
