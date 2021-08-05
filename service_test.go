@@ -1,4 +1,4 @@
-package Fault_Tolerance_Lib_For_Go
+package Perseus
 
 import (
 	"Perseus/circuit"

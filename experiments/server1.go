@@ -2,6 +2,7 @@ package main
 
 import (
 	perseus "Perseus"
+	pconfig "Perseus/config"
 	"fmt"
 	"log"
 	"net"
@@ -56,14 +57,15 @@ func connectServer12() error {
 		return err
 	}
 	fmt.Println(string(buffer))
-	if len(errors1) == 0 {
-		output1 <- true
-	}
+	output1 <- true
 	return nil
 }
 
 // handleRequest1 the server1 handles a request from clients
 func handleRequest1(conn net.Conn, num int) {
+	// default timeout limit is 1 second, or you can configure by yourself as following
+	pconfig.ConfigureCommand("my_command", pconfig.CommandConfig{Timeout: 1000})
+	time.Sleep(10 * time.Second)
 	fmt.Println("accept num:", num)
 	clientInfo := make([]byte, 2048)
 	// read the information from the client

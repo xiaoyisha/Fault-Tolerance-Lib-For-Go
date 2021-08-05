@@ -13,7 +13,6 @@ var errors0 chan error
 
 // connectServer01 server0 connects to the server1
 func connectServer01() error {
-	time.Sleep(10 * time.Second)
 	conn, err := net.Dial("tcp", "localhost:8888")
 	if err != nil {
 		log.Fatal("an error!", err.Error())
@@ -36,9 +35,7 @@ func connectServer01() error {
 		return err
 	}
 	fmt.Println(string(buffer))
-	if len(errors0) == 0 {
-		output0 <- true
-	}
+	output0 <- true
 	return nil
 }
 
@@ -56,6 +53,8 @@ func main() {
 	errors0 = make(chan error, 1)
 	beforeRun := time.Now()
 	fmt.Println("start time: ", beforeRun)
+
+	// with Perseus
 	errors0 = perseus.Go("my_command", connectServer01, fallback0)
 	select {
 	case _ = <-output0:
@@ -65,6 +64,12 @@ func main() {
 		// failure
 		log.Printf("err: %v", err)
 	}
+
+	// without Perseus
+	//err := connectServer01()
+	//if err != nil {
+	//	log.Printf("err: %v", err)
+	//}
 
 	// get the running duration
 	duration := time.Since(beforeRun)

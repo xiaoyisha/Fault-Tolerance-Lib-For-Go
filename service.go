@@ -1,4 +1,4 @@
-package Fault_Tolerance_Lib_For_Go
+package Perseus
 
 import (
 	"Perseus/circuit"
@@ -146,7 +146,6 @@ func (c *Command) firstGoroutine(ctx context.Context) {
 		c.ticketCond.Signal()
 		c.Unlock()
 	default:
-		log.Printf("in r1 default case")
 		c.ticketGot = true
 		c.ticketCond.Signal()
 		c.Unlock()
