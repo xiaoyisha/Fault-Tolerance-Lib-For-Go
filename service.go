@@ -165,7 +165,6 @@ func (c *Command) firstGoroutine(ctx context.Context) {
 		log.Printf("runErr: %v", runErr)
 		if runErr != nil {
 			c.errorWithFallback(ctx, runErr)
-			log.Printf("here")
 			return
 		}
 		c.reportEvent("success")
@@ -188,6 +187,7 @@ func (c *Command) secondGoroutine(ctx context.Context) {
 		return
 	case <-timer.C:
 		c.returnOnce.Do(func() {
+			log.Printf("runErr: timeout")
 			c.returnTicket()
 			c.errorWithFallback(ctx, ErrTimeout)
 		})
@@ -212,6 +212,7 @@ func (c *Command) errorWithFallback(ctx context.Context, err error) {
 	c.reportEvent(eventType)
 	fallbackErr := c.tryFallback(ctx, err)
 	if fallbackErr != nil {
+		log.Printf("fallbackErr: %v", fallbackErr)
 		c.errChan <- fallbackErr
 	}
 	c.reportAllEvents()

@@ -11,8 +11,10 @@ import (
 
 var output3 chan bool
 var errors3 chan error
+var output31 chan bool
+var errors31 chan error
 
-// connectServer34 server0 connects to the server1
+// connectServer34 server3 connects to the server4
 func connectServer34() error {
 	//time.Sleep(10 * time.Second)
 	conn, err := net.Dial("tcp", "localhost:8890")
@@ -52,10 +54,10 @@ func main() {
 	var userCurReq = 4
 	var orderMaxReq = 5
 	var orderCurReq = 4
-	for i := 0; i < userCurReq; i++ {
-		output3 = make(chan bool, 1)
-		errors3 = make(chan error, 1)
-	}
+	output3 = make(chan bool, 1)
+	errors3 = make(chan error, 1)
+	output31 = make(chan bool, 1)
+	errors31 = make(chan error, 1)
 
 	// run in the 'user' pool
 	beforeRun := time.Now()
@@ -103,28 +105,28 @@ func main() {
 		MaxConcurrentRequests: orderMaxReq,
 	})
 	for i := 0; i < orderCurReq; i++ {
-		errors3 = perseus.Go("order", func() error {
+		errors31 = perseus.Go("order", func() error {
 			err := connectServer34()
 			if err != nil {
 				log.Printf("run function err: %v", err)
 				return err
 			}
-			output3 <- true
+			output31 <- true
 			return nil
 		}, func(e error) error {
 			err := fallback3(e)
 			if err != nil {
 				return err
 			}
-			output3 <- true
+			output31 <- true
 			return nil
 		})
 	}
 	select {
-	case _ = <-output3:
+	case _ = <-output31:
 		// success
 		log.Printf("success")
-	case err := <-errors3:
+	case err := <-errors31:
 		// failure
 		log.Printf("err: %v", err)
 	}
