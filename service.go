@@ -25,7 +25,7 @@ func (e CircuitError) Error() string {
 	return "Perseus: " + e.Message
 }
 
-// Command models the state used for a single execution on a circuit. "hystrix command" is commonly
+// Command models the state used for a single execution on a circuit. "Perseus command" is commonly
 // used to describe the pairing of your run/fallback functions with a circuit.
 type Command struct {
 	sync.Mutex
@@ -234,7 +234,7 @@ func (c *Command) tryFallback(ctx context.Context, err error) error {
 }
 
 // Do runs your function in a synchronous manner, blocking until either your function succeeds
-// or an error is returned, including hystrix circuit errors
+// or an error is returned, including Perseus circuit errors
 func Do(name string, run RunFunc, fallback FallbackFunc) error {
 	runC := func(ctx context.Context) error {
 		return run()
@@ -249,7 +249,7 @@ func Do(name string, run RunFunc, fallback FallbackFunc) error {
 }
 
 // DoC runs your function in a synchronous manner, blocking until either your function succeeds
-// or an error is returned, including hystrix circuit errors
+// or an error is returned, including Perseus circuit errors
 func DoC(ctx context.Context, name string, run RunFuncC, fallback FallbackFuncC) error {
 	done := make(chan struct{}, 1)
 

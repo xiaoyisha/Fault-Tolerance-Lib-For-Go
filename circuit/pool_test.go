@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestReturn(t *testing.T) {
+func TestReturnTicket(t *testing.T) {
 	defer Flush()
 
 	Convey("when returning a ticket to the pool", t, func() {

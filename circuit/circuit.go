@@ -95,8 +95,8 @@ func Flush() {
 	}
 }
 
-// IsOpen is called before any Command execution. An "open" circuit
-// means the command should be rejected
+// IsOpen returns true if circuit is ‘open’, false otherwise
+// An "open" circuit means the command should be rejected
 func (circuitBreaker *CircuitBreaker) IsOpen() bool {
 	circuitBreaker.mutex.RLock()
 	o := circuitBreaker.forceOpen || circuitBreaker.open

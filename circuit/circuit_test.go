@@ -2,7 +2,6 @@ package circuit
 
 import (
 	"Perseus/config"
-	"Perseus/metrics"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"sync"
@@ -67,33 +66,6 @@ func TestMultithreadedGetCircuit(t *testing.T) {
 
 		Convey("should be threadsafe", func() {
 			So(numCreates, ShouldEqual, int32(1))
-		})
-	})
-}
-
-func TestReportEventOpenThenClose(t *testing.T) {
-	Convey("when a circuit is closed", t, func() {
-		defer Flush()
-
-		config.ConfigureCommand("", config.CommandConfig{ErrorPercentThreshold: 50})
-
-		cb, _, err := GetCircuitBreaker("")
-		So(err, ShouldEqual, nil)
-		So(cb.IsOpen(), ShouldBeFalse)
-		openedTime := cb.openedOrLastTestedTime
-
-		Convey("but the metrics are unhealthy", func() {
-			cb.Metrics = metrics.MetricFailingPercent(100)
-			So(cb.Metrics.IsHealthy(time.Now()), ShouldBeFalse)
-
-			Convey("and a success is reported", func() {
-				err = cb.ReportEvent([]string{"success"}, time.Now(), 0)
-				So(err, ShouldEqual, nil)
-
-				Convey("the circuit does not open then close", func() {
-					So(cb.openedOrLastTestedTime, ShouldEqual, openedTime)
-				})
-			})
 		})
 	})
 }

@@ -8,7 +8,7 @@ import (
 var (
 	// DefaultTimeout is how long to wait for command to complete, in milliseconds
 	DefaultTimeout = 1000
-	// DefaultMaxConcurrent is how many commands of the same type can run at the same time in an executor pool
+	// DefaultMaxConcurrent is how many commands can run at the same time in an executor pool
 	DefaultMaxConcurrent = 10
 	// DefaultVolumeThreshold is the minimum number of requests needed before a circuit can be tripped due to health
 	DefaultVolumeThreshold = 20

@@ -7,8 +7,8 @@ import (
 
 // DefaultMetricCollector holds information about the circuit state.
 // This implementation of MetricCollector is the canonical source of information about the circuit.
-// It is used for for all internal hystrix operations
-// including circuit health checks and metrics sent to the hystrix dashboard.
+// It is used for for all internal Perseus operations
+// including circuit health checks.
 //
 // Metric Collectors do not need Mutexes as they are updated by circuits within a locked context.
 type DefaultMetricCollector struct {
