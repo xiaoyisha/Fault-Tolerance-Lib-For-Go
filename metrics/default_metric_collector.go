@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"Perseus/rolling"
+	"github.com/xiaoyisha/Perseus/rolling"
 	"sync"
 )
 
@@ -31,7 +31,7 @@ type DefaultMetricCollector struct {
 	runDuration       *rolling.Timing
 }
 
-func newDefaultMetricCollector(name string) MetricCollector {
+func newDefaultMetricCollector() MetricCollector {
 	m := &DefaultMetricCollector{}
 	m.mutex = &sync.RWMutex{}
 	m.Reset()

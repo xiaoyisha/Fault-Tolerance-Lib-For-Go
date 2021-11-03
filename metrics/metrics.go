@@ -1,8 +1,8 @@
 package metrics
 
 import (
-	"Perseus/config"
-	"Perseus/rolling"
+	"github.com/xiaoyisha/Perseus/config"
+	"github.com/xiaoyisha/Perseus/rolling"
 	"sync"
 	"time"
 )

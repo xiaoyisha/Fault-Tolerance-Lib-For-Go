@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"Perseus/config"
+	"github.com/xiaoyisha/Perseus/config"
 	"testing"
 	"time"
 

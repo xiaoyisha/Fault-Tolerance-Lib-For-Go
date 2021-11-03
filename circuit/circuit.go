@@ -1,9 +1,9 @@
 package circuit
 
 import (
-	"Perseus/config"
-	"Perseus/metrics"
 	"fmt"
+	"github.com/xiaoyisha/Perseus/config"
+	"github.com/xiaoyisha/Perseus/metrics"
 	"log"
 	"sync"
 	"sync/atomic"
